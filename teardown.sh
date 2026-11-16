@@ -3,6 +3,23 @@
 source "$(dirname "$0")/lib.sh"
 guard_account
 
+# The API endpoint only allows the IP the cluster was created from. If your IP has changed
+# (another network), kubectl and eksctl's cleanup can't reach the cluster, so allow it first.
+title "0 · Make sure the cluster API is reachable from this machine"
+if aws eks describe-cluster --name "$CLUSTER" >/dev/null 2>&1; then
+  MY_IP="$(curl -s --max-time 10 https://checkip.amazonaws.com)/32"
+  CIDRS=$(aws eks describe-cluster --name "$CLUSTER" --query 'cluster.resourcesVpcConfig.publicAccessCidrs' --output text)
+  if [[ " $CIDRS " == *" 0.0.0.0/0 "* || " $CIDRS " == *" $MY_IP "* ]]; then
+    note "endpoint already allows $MY_IP"
+  else
+    say "Endpoint allows [$CIDRS]; adding $MY_IP for teardown"
+    aws eks update-cluster-config --name "$CLUSTER" \
+      --resources-vpc-config endpointPublicAccess=true,endpointPrivateAccess=true,publicAccessCidrs="$MY_IP" >/dev/null
+    sleep 30; aws eks wait cluster-active --name "$CLUSTER"
+    rm -f "$KUBECONFIG"
+  fi
+fi
+
 title "1 · Delete demo workloads (PVCs first so EBS volumes are released)"
 if aws eks describe-cluster --name "$CLUSTER" >/dev/null 2>&1; then
   ensure_kubeconfig

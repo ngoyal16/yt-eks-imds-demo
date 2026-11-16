@@ -57,3 +57,7 @@ eksctl create cluster -f cluster.yaml  # ~15–20 min
 2. Give every pod that calls AWS its own identity with **EKS Pod Identity** or IRSA.
 3. Run `audit.sh` first, so add-ons, scanners and agents that used the node role don't break.
 4. Watch GuardDuty for `UnauthorizedAccess:IAMUser/InstanceCredentialExfiltration.OutsideAWS`.
+
+## License
+
+MIT, see [LICENSE](LICENSE).
