@@ -1,0 +1,16 @@
+# Step 6: give the EBS CSI controller its own identity so it never needs IMDS
+# eksctl create podidentityassociation -f pod-identity-ebs.yaml
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+metadata:
+  name: yt-eks-imds-demo
+  region: ap-south-1
+iam:
+  podIdentityAssociations:
+    - namespace: kube-system
+      serviceAccountName: ebs-csi-controller-sa
+      roleName: yt-eks-imds-demo-ebs-csi
+      permissionPolicyARNs:
+        - arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy
+      tags:
+        Project: yt-eks-imds-demo

@@ -1,0 +1,25 @@
+# Step 5: least-privilege Pod Identity for one workload (read one S3 bucket)
+# Rendered by demo.sh step 5 (__BUCKET__ -> your bucket), then: eksctl create podidentityassociation -f <rendered file>
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+metadata:
+  name: yt-eks-imds-demo
+  region: ap-south-1
+iam:
+  podIdentityAssociations:
+    - namespace: demo
+      serviceAccountName: s3-reader
+      roleName: yt-eks-imds-demo-s3-reader
+      tags:
+        Project: yt-eks-imds-demo
+      permissionPolicy:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: ListOneBucket
+            Effect: Allow
+            Action: ["s3:ListBucket"]
+            Resource: ["arn:aws:s3:::__BUCKET__"]
+          - Sid: ReadOneBucket
+            Effect: Allow
+            Action: ["s3:GetObject"]
+            Resource: ["arn:aws:s3:::__BUCKET__/*"]

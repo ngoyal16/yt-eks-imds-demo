@@ -1,0 +1,9 @@
+# Local account settings and credentials-adjacent files
+config.env
+.kubeconfig
+.pod-identity-s3.rendered.yaml
+
+# Run logs (local paths and account details)
+logs/
+
+.DS_Store

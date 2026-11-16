@@ -1,0 +1,70 @@
+# yt-eks-imds-demo — EKS IMDS hop-limit lab (use a dedicated sandbox account)
+# Create:   AWS_PROFILE=<your-sandbox-profile> eksctl create cluster -f cluster.yaml
+# Delete:   ./teardown.sh
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: yt-eks-imds-demo
+  region: ap-south-1
+  version: "1.37"
+  tags:
+    Project: yt-eks-imds-demo
+
+vpc:
+  # One NAT gateway instead of one per AZ (cheaper; fine for a lab)
+  nat:
+    gateway: Single
+  clusterEndpoints:
+    publicAccess: true
+    privateAccess: true
+  # Public API endpoint reachable only from my current public IP
+  publicAccessCIDRs:
+    - 203.0.113.10/32   # REPLACE with your public IP (curl -s https://checkip.amazonaws.com)
+
+iam:
+  withOIDC: false   # using EKS Pod Identity, not IRSA
+
+accessConfig:
+  authenticationMode: API
+
+addons:
+  - name: vpc-cni
+  - name: coredns
+  - name: kube-proxy
+  - name: eks-pod-identity-agent
+
+managedNodeGroups:
+  # The common default: IMDSv2 required, hop limit 2 -> pods can reach IMDS
+  - name: default-config
+    instanceType: t3.medium
+    desiredCapacity: 1
+    minSize: 1
+    maxSize: 1
+    volumeSize: 20
+    volumeType: gp3
+    privateNetworking: true
+    disableIMDSv1: true          # IMDSv2 required
+    disablePodIMDS: false        # hop limit 2
+    labels:
+      demo/imds: default-config
+    tags:
+      Project: yt-eks-imds-demo
+    propagateASGTags: true
+
+  # Hardened: IMDSv2 required, hop limit 1 -> pod traffic can't reach IMDS
+  - name: hardened
+    instanceType: t3.medium
+    desiredCapacity: 1
+    minSize: 1
+    maxSize: 1
+    volumeSize: 20
+    volumeType: gp3
+    privateNetworking: true
+    disableIMDSv1: true          # IMDSv2 required
+    disablePodIMDS: true         # hop limit 1
+    labels:
+      demo/imds: hardened
+    tags:
+      Project: yt-eks-imds-demo
+    propagateASGTags: true
